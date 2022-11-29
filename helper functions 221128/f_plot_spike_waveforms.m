@@ -1,4 +1,4 @@
-function f_plot_spike_waveforms(data, spikeTimes, fs, leadTime, lenSpike, thresh, mapping, good_channels)
+function f_plot_spike_waveforms(data, spikeTimes, fs, leadTime, lenSpike, thresh)
     nChannels = size(data,2);
     indAroundSpike = -leadTime*fs:lenSpike*fs;
     tSpike = -leadTime:1/fs:lenSpike;

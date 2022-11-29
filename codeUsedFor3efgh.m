@@ -2,11 +2,12 @@
 clear;
 clc;
 
-nickname = 'NOD15\0309_run4';
+nickname = 'NOD18\0316_run03';
 %  Manual load processed\video_runX.mat
 %load 'C:\Users\Maddie\Documents\Martin Exps\Processed Data\NOD20 video\0309_run4.mat';
 %  Manual load processed_EP\lpf_YYY_runX.mat
-load(['C:\Users\Maddie\Documents\Martin Exps\Processed Data\' nickname '.mat']);
+%load(['C:\Users\Maddie\Documents\Martin Exps\Processed Data\' nickname '.mat']);
+load(['D:\Maddie\Martin Exps\Processed Data\' nickname '.mat']);
 
 %% Gather time & frequency info from RHD file, map channels to array, and filter raw data into LFP and MUA
 fs = rhd.frequency_parameters.amplifier_sample_rate;
@@ -20,7 +21,7 @@ impedance = [rhd.amplifier_channels.electrode_impedance_magnitude];
 mapping = [4,3,1,16,5,6,2,15,7,10,14,13,8,9,11,12];
 
 impedance_mapped = impedance(9:24); %cut out unused channels
-good_channels = find(impedance_mapped < 30e6); % consider channels below an impedance threshold "good channels"
+good_channels = find(impedance_mapped < 10e6); % consider channels below an impedance threshold "good channels"
 impedance_mapped = impedance_mapped(good_channels);
 
 data_good = rhd.amplifier_data(9:24,:); % cut out unused channels
@@ -66,16 +67,13 @@ end
 %clear data_good;
 
 %% Remove noisy ICA components
-ica_remove = [1,2,3,4]; %Hardcode which ICA components to remove based on ICA plots in previous section
+%ica_remove = [1,2,3,4]; %Hardcode which ICA components to remove based on ICA plots in previous section
 good_ind = setdiff(1:length(good_channels), ica_remove); % second input is channel to remove based on imaging artifact
 ECoG_denoise = ica_source_activity(:,good_ind) * Aica(:,good_ind)';
 
-%Clear helper variables
-%clear good_ind;
-
 
 %% Create LPF and MUA data and downsample
-fs_down = 6000; % Choose downsample frequency
+fs_down = 20000; % Choose downsample frequency
 
 d_low = designfilt('lowpassiir','FilterOrder',8, ...
 'PassbandFrequency',250,'PassbandRipple',0.2, ...
@@ -92,7 +90,6 @@ data_bpf_down = data_bpf(1:fs/fs_down:end,:); % fs_down Hz sampling rate
 %data_bpf_down = data_bpf_down - median(data_bpf_down,2);
 t_down = t_amplifier(1:fs/fs_down:end);
 
-%Clear helper variables
 
 %% Plot all LFP and MUA (good) channels
 figure;
@@ -118,10 +115,10 @@ ylabel('Voltage (\muV)');
 xlabel('Time (s)');
 
 
-%% MUA Trial Averages
-leadTime = -1;
-lenTrial = 8;
-badEpochs = [1,3,4,5,7,8,10,11,12,13,14,15,16,18,19];
+%% MUA Trial Averages (For Figure 3e)
+leadTime = -0.2;
+lenTrial = 4;
+badEpochs = [2,5,7,10];
 lightLength = 5;
 
 d_low_100 = designfilt('lowpassiir','FilterOrder',8, ...
@@ -165,7 +162,7 @@ for j = 1:length(good_channels)
         count = count + 1;
     end
     %trialAverages_mua(:,j) = mean(temp,2);
-    trialAverages_mua(:,j) = smoothdata(mean(temp,2), 'gaussian', fs_down*0.05); %mean(temp,2);
+    trialAverages_mua(:,j) = smoothdata(mean(temp,2), 'gaussian', fs_down*0.015); %mean(temp,2);
     
 %     signal = trialAverages_mua(find(t_trial >= 0,1):(find(t_trial >= 0,1)-leadTime*fs_down));
 %     noise = trialAverages_mua((find(t_trial >= 0,1)+leadTime*fs_down):find(t_trial >= 0,1));
@@ -182,10 +179,11 @@ for j = 1:length(good_channels)
     subplot(4,4,find(mapping == good_channels(j)));
     fill([t_trial, fliplr(t_trial)], [curve1; flipud(curve2)], [0.8, 0.8, 0.8], 'EdgeColor', 'none'); hold on;
     plot(t_trial, trialAverages_mua(:,j), 'k', 'LineWidth', 2); hold on;
-    ylim([0 200]);
-    xlim([leadTime, lenTrial]);
+    ylim([20 150]);
+    xlim([-0.2 0.4]);%([leadTime, lenTrial]);
     fill([0,lightLength,lightLength,0], [0,0,2,2], [1 0.5 0.25], 'EdgeColor', 'none');
     title(['Channel ' num2str(good_channels(j)) ', SNR = ' num2str(s(j))]);
+    disp(j);
 end
 sgtitle([nickname ' Average MUA' ], 'Interpreter', 'none');
 
@@ -235,114 +233,36 @@ sgtitle([nickname ' Average MUA' ], 'Interpreter', 'none');
 clear A; clear B; clear tempTrialData; clear temp;
 
 
-%% Plot select trial averages (Figure 3c)
+%% Plot select trial averages
 figure;
-ch = [7,8,11,14]; %Select which channels to plot
+ch = [12,14,6,4]; %Select which channels to plot
 for i = 1:length(ch)
-    plot(leadTime:1/fs_down:lenTrial-1/fs_down, trialAverages_mua(:,find(good_channels == ch(i)))+20*i, 'k'); hold on;
+    plot(leadTime:1/fs_down:lenTrial-1/fs_down, trialAverages_mua(:,find(good_channels == ch(i)))+50*i, 'k'); hold on;
 end
-fill([0,5,5,0], [20,20,21,21], [1 0.5 0.25], 'EdgeColor', 'none');
+fill([0,0.1,0.1,0], [20,20,21,21], [1 0.5 0.25], 'EdgeColor', 'none');
+xlim([-0.2 0.4]);
 xlabel('Latency (s)');
 ylabel ('Amplitude (\muV^2)');
 
 
-%% LFP Trial Averages
-%leadTime = -2;
-%lenTrial = 8;
-%badEpochs = [8,11,12,16,19];
-%lightLength = 2;
-
-trialAverages_lfp = zeros((lenTrial - leadTime)*fs_down, length(good_channels));
-t_trial = leadTime:1/fs_down:lenTrial-1/fs_down;
-
-%ind = find(t_amplifier >= t_stim);
-
-figure;
-for j = 1:length(good_channels)
-    temp = zeros((lenTrial - leadTime)*fs_down, length(t_stim)-length(badEpochs));
-    count = 1;
-    lastUsedI = 1;
-    for i = 1:length(t_stim)
-        if find(badEpochs == i)
-            continue;
-        end
-        %ind = find(t_down >= t_stim(i),1);
-        
-        A= data_lfp_down(ind_down(lastUsedI)+leadTime*fs_down:ind_down(lastUsedI)-1, j);
-        B = data_lfp_down(ind_down(i):ind_down(i)+(lenTrial*fs_down)-1, j);
-        tempTrialData = [A;B];
-
-        %temp(:,count) = smoothdata(data_lfp_down(ind+leadTime*fs_down:ind+lenTrial*fs_down-1/fs_down, j), 'gaussian', fs_down*0.01);
-        temp(:,count) = smoothdata(tempTrialData, 'gaussian', fs_down*0.01);
-        count = count + 1;
-        lastUsedI = i + 1;
-    end
-    trialAverages_lfp(:,j) = mean(temp,2);
-    subplot(4,4,find(mapping == good_channels(j)));
-    plot(t_trial, mean(temp,2)); hold on;
-    ylim([-200 200]);
-    fill([0,lightLength,lightLength,0], [-100,-100,-90,-90], [1 0.5 0.25], 'EdgeColor', 'none');
-    set(gca, 'FontSize', 18);
-    %fill([2,3,3,2], [-100,-100,-90,-90], [1 0.5 0.25], 'EdgeColor', 'none');
-end
-sgtitle([nickname ' Average LFP'], 'Interpreter', 'none');
-
-%Clear helper variables
-clear A; clear B; clear tempTrialData; clear temp;
-
-%% Compute Inter-trial phase clustering (ITPC) spectrogram (not used in figure but may be interesting in the future)
-params.tapers = [3 5];
-params.pad = 2;
-params.Fs = fs_down;
-params.fpass = [0 150];
-params.err = 0;
-params.trialave = 0;
-winsize = 0.1;
-winstep = 0.001;
-movingwin = [winsize winstep];
-
-tic;
-[~,phi,allphi,t,f]=mtspecgramc_mnw(data_lfp_down,movingwin,params); % This takes around 1 minute, modified from Chronux toolbox's mtspecgramc() function
-toc;
-
-% Plot result
-figure; plot_matrix(phi(:,:,1), t, f, 'n'); hold on; 
-for i = 1:length(t_stim)
-    plot([t_stim(i) t_stim(i)],get(gca,'ylim'),'k','linew',1);
-end
-
-% Plot trial average
-leadTime = -1;
-lenTrial = 10;
-figure;
-for i = 1:length(good_channels)
-    hAngles = zeros(length(t_stim), fs_down*(lenTrial-leadTime), length(f));
-    for j = 1:length(t_stim)
-        hAngles(j,:,:) = phi(find(t >= t_stim(j),1)+fs_down*leadTime:find(t >= t_stim(j),1)+fs_down*lenTrial-1,:,i);
-        %hAngles(j,:,:) = smoothdata(phi(find(t >= t_stim(j),1)+fs_down*leadTime:find(t >= t_stim(j),1)+fs_down*lenTrial-1,:,i),1, 'gaussian', fs_down*0.01);
-    end
-    
-    itpc = squeeze(abs(mean(exp(1i*hAngles))));
-    prefAngle = squeeze(angle(mean(exp(1i*hAngles))));
-    subplot(4,4,find(mapping == good_channels(i)));
-    plot_matrix(smoothdata(itpc,1,'gaussian',fs_down*0.01), leadTime:1/fs_down:lenTrial-1/fs_down, f, 'n');
-    %plot_matrix(itpc, leadTime:1/fs_down:lenTrial-1/fs_down, f, 'n'); % plot data without smoothing
-    c = colorbar;
-    c.Label.String = 'ITPC';
-    caxis([0.2 0.4]);
-    title(['Channel ' num2str(good_channels(i))]);
-end
-sgtitle(nickname, 'Interpreter', 'none');
-
 %% Spike detection using findpeaks.m
 % Set epochs that have noise to zero so they aren't picked up by the threshold
+badEpochs = [2,5,7,10];%[2,4,5,6,7,10]; % Define here if not already
+
 data_bpf_noise_nan = data_bpf_down;
 for i = 1:length(badEpochs)
     idx = find(t_down >= t_stim(badEpochs(i)),1);
     data_bpf_noise_nan(idx:idx+fs_down*10,:) = nan;
 end
-%data_bpf_noise_nan(130*fs_down:end,:) = nan;
-thresh = 3.5*nanstd(data_bpf_noise_nan); % modify SD multiplier based on SNR (3, 3.5, 4, or 4.5 usually good)
+data_bpf_noise_nan(130*fs_down:end,:) = nan;
+data_bpf_noise_nan(4*fs_down:9.15*fs_down,:) = nan;
+data_bpf_noise_nan(27.06*fs_down:29.03*fs_down,:) = nan;
+data_bpf_noise_nan(53.5*fs_down:55.95*fs_down,:) = nan;
+data_bpf_noise_nan(73.5*fs_down:75.19*fs_down,:) = nan;
+data_bpf_noise_nan(109.8*fs_down:111.7*fs_down,:) = nan;
+
+std_multiplier = 3.25;
+thresh = std_multiplier*nanstd(data_bpf_noise_nan); % modify SD multiplier based on SNR (3, 3.5, 4, or 4.5 usually good)
 
 spikes = zeros(size(data_bpf_noise_nan));
 for i = 1:length(good_channels)
@@ -371,64 +291,6 @@ title(nickname, 'Interpreter', 'none');
 %Clear helper variables
 clear spikes_sum; clear pks; clear loc; clear temp;
 
-%% Plot spike waveforms
-leadTime = 0.001;
-lenSpike = 0.002;
-f_plot_spike_waveforms(data_bpf_down, spikes, fs_down, leadTime, lenSpike, thresh, mapping, good_channels);
-
-
-%% Plot 'PSTH'
-figure;
-for j = 1:length(good_channels)
-    temp = zeros(round((lenTrial - leadTime)*fs_down), length(t_stim)-length(badEpochs));
-    count = 1;
-    lastUsedI = 1;
-    for i = 1:length(t_stim)
-        if find(badEpochs == i)
-            continue;
-        end
-        
-        A= spikes(ind_down(lastUsedI)+leadTime*fs_down:ind_down(lastUsedI)-1, j);
-        B = spikes(ind_down(i):ind_down(i)+(lenTrial*fs_down)-1, j);
-        tempTrialData = [A;B];
-
-        temp(:,count) = smoothdata(tempTrialData, 'gaussian', fs_down*0.001);
-        count = count + 1;
-        lastUsedI = i + 1;
-    end
-    subplot(4,4,find(mapping == good_channels(j)));
-    plot(t_trial, mean(temp,2)); hold on;
-    ylim([0 .01]);
-    fill([0,5,5,0], [-100,-100,-90,-90], [1 0.5 0.25], 'EdgeColor', 'none');
-end
-sgtitle([nickname ' Average LFP'], 'Interpreter', 'none');
-
-%% Plot all electrodes MUA with threshold and spike timepoints, can also plot band-filtered LFP to see if there's any visible phase/spike correlation
-spikes_plot = spikes;
-spikes_plot(spikes_plot == 0) = NaN;
-
-% d_bpass_delta = designfilt('bandpassiir','FilterOrder',6, ...
-% 'HalfPowerFrequency1',1,'HalfPowerFrequency2',4, ...
-% 'SampleRate',fs_down);
-% 
-% data_delta = filtfilt(d_bpass_delta, data_lfp_ica);
-
-figure;
-for i = 1:length(good_channels)
-    subplot(4,4,find(mapping == good_channels(i)));
-    plot(t_down, data_bpf_noise_nan(:,i) + 250, 'LineWidth', 1, 'Color', 'r'); hold on;
-    scatter(t_down, spikes_plot(:,i)*270, '.', 'MarkerEdgeColor', 'k'); hold on;
-    %plot(t_down, data_lfp_ica(:,i), 'LineWidth', 1, 'Color', 'b'); hold on;
-    %plot(t_down, data_delta(:,i) + 100, 'LineWidth', 1, 'Color', 'g'); hold on;
-    plot(get(gca, 'xlim'), [-1*thresh(i)+250 -1*thresh(i)+250], 'Color', 'k');
-    %ylim([-100 300]);
-    xlim([0 30]);
-    ylabel('Amplitude (\muV)');
-    xlabel('Time (seconds)');
-    title(['Channel ' num2str(good_channels(i))]);
-end
-sgtitle(nickname, 'Interpreter', 'none');
-
 
 %% plot select electrode channels, showing their MUA, MUA spikes, and thresholds (Figure 3b)
 ch = [12,14,6,4]; % channel #, not location in array
@@ -441,31 +303,18 @@ figure;
 for j = 1:length(ch)
     i = find(good_channels == ch(j));
     
+    plot([0 t_down(end)], [-1*thresh(i) -1*thresh(i)] + y_offset(j), 'Color', 'r', 'LineWidth', 2); hold on;
     plot(t_down, data_bpf_noise_nan(:,i) + y_offset(j), 'LineWidth', 1, 'Color', 'k'); hold on;
     scatter(t_down, spikes_plot(:,i)*(-1*thresh(i)) + y_offset(j) - 10, 'MarkerFaceColor', 'k'); hold on;
-    plot(get(gca, 'xlim'), [-1*thresh(i) -1*thresh(i)] + y_offset(j), 'Color', 'r', 'LineWidth', 2); hold on;
 end
 
-ylim([0 400]);
-xlim([10 20]);
+ylim([-50 350]);
+xlim([10 20]);%([10 10.5]);
 ylabel('Amplitude (\muV)');
 xlabel('Time (seconds)');
-title([nickname ' Channel: ' num2str(ch)], 'Interpreter', 'none');
+title([nickname ' Channel: ' num2str(ch) ' SD: ' num2str(std_multiplier) ' ICA: ' num2str(ica_remove)], 'Interpreter', 'none');
 set(gca, 'FontSize', 25);
 
-%% 2D plot of all good electrode channels (same as previous section but now shown in 2D rather than select channels in the same plot)
-figure;
-for j = 1:length(good_channels)
-    subplot(4,4, find(mapping == good_channels(j)));
-    
-    plot(t_amplifier, data_mua_ica(:,j), 'LineWidth', 1, 'Color', 'k'); hold on;
-    scatter(t_amplifier, spikes_plot(:,j)*(-1*thresh(j)) - 10, 'MarkerFaceColor', 'k'); hold on;
-    plot(get(gca, 'xlim'), [-1*thresh(j) -1*thresh(j)], 'Color', 'r'); hold on;
-    ylim([-30 30]);
-    xlim([0 10]);
-    ylabel('Amplitude (\muV)');
-    xlabel('Time (seconds)');
-end
 
 %% Define periods of light and dark (for categorizing MUA spikes into ones happening during "light" or "dark" periods)
 lenStim = 4; %time that the light was flashing (e.g. for 5 Hz, 2 sec stimuli => lenStim = 2)
@@ -517,8 +366,9 @@ figure;
 for i = 1:length(good_channels)
     temp = (spikes_light(:,i) ~= 0);
     scatter(t_down(temp), spikes_light(temp,i)*i, 10, 'b', 'filled'); hold on;
-    temp = (spikes_dark(:,i) ~= 0);
-    scatter(t_down(temp), spikes_dark(temp,i)*i, 10, 'r', 'filled'); hold on;
+    temp2 = (spikes_dark(:,i) ~= 0);
+    scatter(t_down(temp2), spikes_dark(temp2,i)*i, 10, 'r', 'filled'); hold on;
+    %disp(sum(temp2));
 end
 for i = 1:length(t_stim)
     plot([t_stim(i) t_stim(i)],get(gca,'ylim'),'k','linew',1);
@@ -529,10 +379,11 @@ ylabel('Spikes');
 legend('Light', 'Dark');
 title(nickname, 'Interpreter', 'none');
 
+disp(['light spike count = ' num2str(sum(spikes_light,1))]);
 
 %% PLV spectrogram (only at spike time points to reduce computation time) using Xin/Chronux multitaper method
 % User parameters
-tapers = [5,3];
+tapers = [5,9];
 params = struct('tapers', tapers,'pad',0,'Fs',fs_down,'fpass',[0,150]);
 win = 1*fs_down; % window size around each MUA spike: win =(seconds)*fs_down
 
@@ -548,16 +399,6 @@ ind_dark_all = find(sum(spikes_dark,2) >= 1);
 ind_dark_all(ind_dark_all < win/2) = []; %get rid of spikes too close to beginning of recording
 ind_dark_all(ind_dark_all > length(t_down) - win/2) = []; % get rid of spikes too close to end of recording
 
-
-% Choose random dark spikes to match number of light spikes (can't do with
-% total number bc what matters is channel to channel numbers
-% spikes_dark_truc = spikes_dark;
-% if length(ind_light_all) < length(ind_dark_all)
-%     temp = randperm(length(ind_dark_all)); % Select spikes randomly from dark
-%     spikes_dark_truc(ind_dark_all(temp(length(ind_light_all)+1:end)),:) = 0; %set unused spikes to zero and store in special variable
-%     ind_dark_all = ind_dark_all(temp(1:length(ind_light_all)));
-% end
-
 tic;
 phase_specgram_light = f_plv_XL(data_lfp_down, ind_light_all, win, nFreq, params); % Takes ~1 minute
 toc; tic;
@@ -571,8 +412,8 @@ toc;
 % User parameter
 nBoots = 2000; % Bootstrapping method, "generate nBoot bootstrapped samples"
 
-[phi_light, phi_dark, pval, is_significant] = f_plot_PLV_vs_freq(phase_specgram_light, phase_specgram_dark, spikes_light, spikes_dark, ...
-    ind_light_all, ind_dark_all, t_down, nBoots, nFreq, win, f, mapping, good_channels, params, nickname);
+[phi_light, phi_dark, pval, is_significant] = f_plot_PLV_vs_freq_221126(phase_specgram_light, phase_specgram_dark, spikes_light, spikes_dark, ...
+        ind_light_all, ind_dark_all, t_down, nBoots, nFreq, win, f, mapping, good_channels, params, nickname);
 
 
 %% Calculate PLV of MUA spikes to the LFP of each channel, not just the same channel. For 2D color plotting. (Takes a few minutes)
@@ -581,22 +422,13 @@ freq = [4,6]; % frequency band of interest (e.g. delta => [1,4], theta => [5,9],
 nBoots = 2000; % number of bootstrap samples to take
 
 %Calculate 2D PLV values
-[plv_light_final_2D, plv_dark_final_2D, pval_color] = f_2D_PLV(phase_specgram_light, phase_specgram_dark, spikes_light, spikes_dark_truc, ...
+[plv_light_final_2D, plv_dark_final_2D, pval_color] = f_2D_PLV(phase_specgram_light, phase_specgram_dark, spikes_light, spikes_dark, ...
     ind_light_all, ind_dark_all, win, t_down, freq, f, nBoots, params);
 
 
-%% Plot color maps for all frequencies (Figure 3f)
+%% Plot color maps for all frequencies (Figure 3h)
 % User parameter
 clim = [0.15, 0.35]; % choose color scale that best shows difference between light and dark
-
-% First check that diagonals match the previous self-PLV
-% figure;
-% for i = 1:length(good_channels)
-%     subplot(4,4,find(mapping == good_channels(i)));
-%     plot(f(iFreq(1):iFreq(2)),squeeze(plv_light_final_2D(i,9,:)), 'b'); hold on;
-%     plot(f(iFreq(1):iFreq(2)),squeeze(plv_dark_final_2D(i,9,:)), 'r');
-%     ylim([0 0.41]);
-% end
 
 % Color map for light
 figure;
@@ -608,7 +440,7 @@ for i = 1:length(good_channels)
     itpc2D = reshape(itpcMap, [4 4])';
     itpc2D = fillmissing(itpc2D, 'linear',1, 'EndValues','nearest');
     itpc2D = flipud(itpc2D);
-    %itpc2D = interp2(itpc2D,2);
+    itpc2D = interp2(itpc2D,2);
 
     subplot(4,4,find(mapping == good_channels(i)));
     cmap1 = pcolor(itpc2D);
@@ -634,7 +466,7 @@ for i = 1:length(good_channels)
     itpc2D = reshape(itpcMap, [4 4])';
     itpc2D = fillmissing(itpc2D, 'linear',1, 'EndValues','nearest');
     itpc2D = flipud(itpc2D);
-    %itpc2D = interp2(itpc2D,2);
+    itpc2D = interp2(itpc2D,2);
 
     subplot(4,4,find(mapping == good_channels(i)));
     cmap1 = pcolor(itpc2D);
@@ -651,33 +483,13 @@ end
 sgtitle(['Dark PLV of ' nickname ' for ' num2str(freq(1)) '-' num2str(freq(2)) ' Hz'], 'Interpreter', 'none');
 
 
-%% Polar histograms of the PLV (figure 3e)
+%% Polar histograms of the PLV (figure 3g)
 % User parameter
-freq_single = 5; % choose a single frequency to look at (best to use one in the middle of previously used frequency range)
+freq_single = 4.5; % choose a single frequency to look at (best to use one in the middle of previously used frequency range)
 
-f_plv_histograms(phase_specgram_light, phase_specgram_dark, spikes_light, spikes_dark, ind_light_all, ind_dark_all, win, t_down, freq_single, f, mapping, good_channels);
+f_plv_histograms_221125(phase_specgram_light, phase_specgram_dark, spikes_light, spikes_dark, ind_light_all, ind_dark_all, win, t_down, freq_single, f, mapping, good_channels);
 
 
-%%
-y = squeeze(phi_dark(:,:,10,:));
-figure;
-for i = 1:9
-    subplot(3,3,i);
-    polarhistogram(y(1,:,i),36);
-end
-y2 = angle(mean(exp(1i*y), 3));
-figure; polarhistogram(y2(2,:),36);
-disp(['plv = ' num2str(abs(mean(exp(1i*y2(2,:)))))]);
-
-x = squeeze(phi_light(:,:,10,:));
-figure;
-for i = 1:9
-    subplot(3,3,i);
-    polarhistogram(x(1,:,i),36);
-end
-x2 = angle(mean(exp(1i*x), 3));
-figure; polarhistogram(x2(1,:),36);
-disp(['plv = ' num2str(abs(mean(exp(1i*x2(1,:)))))]);
 
 
 

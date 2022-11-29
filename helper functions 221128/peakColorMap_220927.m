@@ -9,10 +9,9 @@ posPeak = zeros(size(data,1),1);
 iNP = zeros(size(data,1),1);
 iPP = zeros(size(data,1),1);
 
-figure;
+% figure;
 for i = 1:size(data,1)
-    [np, locN] = findpeaks(-1*data(i,fs*(leadTime*-1):fs*leadTime*-1+fs*nPeak),'SortStr','descend');
-    %locN = locN+0.02*fs;
+    [np, locN] = findpeaks(-1*data(i,fs*leadTime*-1:fs*leadTime*-1+fs*nPeak),'SortStr','descend');
     [pp, locP] = findpeaks(data(i,fs*leadTime*-1:fs*leadTime*-1+fs*pPeak),'SortStr','descend');
     
     negPeak(i) = -1*np(1);
@@ -21,14 +20,14 @@ for i = 1:size(data,1)
     iNP(i) = t(locN(1)+fs*leadTime*-1);
     iPP(i) = t(locP(1)+fs*leadTime*-1);
     
-    subplot(4,4,find(mapping == good_channels(i)));
-    plot(t, data(i,:)); hold on;
-    scatter(t(locN(1)+fs*leadTime*-1), -1*np(1)); hold on;
-    scatter(t(locP(1)+fs*leadTime*-1), pp(1));
-    ylim([-150 150]);
-    xlim([leadTime, lenTrial]);
+%     subplot(4,4,find(mapping == good_channels(i)));
+%     plot(t, data(i,:)); hold on;
+%     scatter(t(locN(1)+fs*leadTime*-1), -1*np(1)); hold on;
+%     scatter(t(locP(1)+fs*leadTime*-1), pp(1));
+%     ylim([-150 150]);
+%     xlim([leadTime, lenTrial]);
 end
-sgtitle(nickname, 'Interpreter', 'none');
+% sgtitle(nickname, 'Interpreter', 'none');
 
 % reshape the data
 peak1D = zeros(16,1);
@@ -61,15 +60,39 @@ pp2D = reshape(mappedIPP, [4 4])';
 pp2D = flipud(pp2D);
 pp2D = interp2(pp2D,2);
 
+% stats of propagation speed from bottom right (ch 12) to top left (ch 4)
+ch = 12;
+testCh = 5;
+nPerms = 1000;
+tDelay = zeros(nPerms,1);
+for i = 1:nPerms
+    randOrder = randperm(length(mappedINP));
+    temp = mappedINP(randOrder)*1000; %Units in ms 
+    %temp = withoutCh(randperm(length(withoutCh)));
+    tDelay(i) = temp(find(mapping == testCh)) - temp(find(mapping == ch));
+    %tDelay(i) = control - temp(find;
+end
+meanT = mean(tDelay);
+sdT = std(tDelay);
+disp(['mean: ' num2str(meanT) 'std: ' num2str(sdT)]);
+%Plot results
+figure; histogram(tDelay); hold on;
+errorbar(meanT, 200, sdT, 'horizontal', 'r', 'LineWidth', 1.5); scatter(meanT, 200, 'r', 'LineWidth', 1.5);
+observedDelay = 1000*mappedINP(find(good_channels(mapping) == testCh)) - 1000*mappedINP(find(good_channels(mapping) == ch));
+plot([observedDelay observedDelay], [0 200], 'k--', 'LineWidth', 1.5);
+ylim([0 240]);
+[h,p] = ttest(tDelay, 5.7);
+disp(['h = ' num2str(h) ' p = ' num2str(p)]);
+
 % plot the positive amplitude map
-figure;
-cmap1 = pcolor(peak2D);
-cmap1.FaceColor = 'interp';
-c = colorbar;
-c.Label.String = '|Amplitude|';
-caxis([0,150]);
-title(['Positive Peak Amplitudes ' nickname], 'Interpreter', 'none');
-set(gcf, 'Position', [200 200 900 750]);
+% figure;
+% cmap1 = pcolor(peak2D);
+% cmap1.FaceColor = 'interp';
+% c = colorbar;
+% c.Label.String = '|Amplitude|';
+% caxis([50,100]);
+% title(['Positive Peak Amplitudes ' nickname], 'Interpreter', 'none');
+% set(gcf, 'Position', [200 200 900 750]);
 
 % plot the negative amplitude map
 figure;
@@ -77,7 +100,7 @@ cmap1 = pcolor(abs(peak2Dn));
 cmap1.FaceColor = 'interp';
 c = colorbar;
 c.Label.String = '|Amplitude|';
-caxis([0,150]);
+caxis([0,200]);%caxis([50,200]);%MNW
 title(['Negative Peak Amplitudes ' nickname], 'Interpreter', 'none');
 set(gcf, 'Position', [200 200 900 750]);
 
@@ -87,18 +110,18 @@ cmap1 = pcolor(np2D*1000);
 cmap1.FaceColor = 'interp';
 c = colorbar;
 c.Label.String = 'Delay (ms)';
-caxis([34 42]);%caxis([min(min(iNP*1000)) max(max(iNP*1000))]);
+caxis([35,43]);%caxis([min(min(iNP*1000)) max(max(iNP*1000))]);%MNW
 title(['Negative Peak Delays ' nickname], 'Interpreter', 'none');
 set(gcf, 'Position', [200 200 900 750]);
 
 % plot the positive delay map
-figure;
-cmap1 = pcolor(pp2D*1000);
-cmap1.FaceColor = 'interp';
-c = colorbar;
-c.Label.String = 'Delay (ms)';
-caxis([min(min(iPP*1000)) max(max(iPP*1000))]);%35,43]);%
-title(['Positive Peak Delays ' nickname], 'Interpreter', 'none');
-set(gcf, 'Position', [200 200 900 750]);
+% figure;
+% cmap1 = pcolor(pp2D*1000);
+% cmap1.FaceColor = 'interp';
+% c = colorbar;
+% c.Label.String = 'Delay (ms)';
+% caxis([min(min(iPP*1000)) max(max(iPP*1000))]);
+% title(['Positive Peak Delays ' nickname], 'Interpreter', 'none');
+% set(gcf, 'Position', [200 200 900 750]);
 
 end

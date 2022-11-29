@@ -66,9 +66,9 @@ for i = 1:size(spikes_light,2)
     % Calculate light angles, itpc, and pval
     phase_light_avg = angle(mean(exp(1i*this_specgram_light), 2));
     [pval_light, ~] = circ_rtest(phase_light_avg);
-    %itpc1 = abs(squeeze(mean(exp(1i*this_specgram_light),1))); % circular mean across spikes
-    %itpc_light = squeeze(mean(itpc1)); % mean across tapers
-    itpc_light = abs(mean(exp(1i*phase_light_avg)));
+    itpc1 = abs(squeeze(mean(exp(1i*this_specgram_light),1))); % circular mean across spikes
+    itpc_light = squeeze(mean(itpc1)); % mean across tapers
+    %itpc_light = abs(mean(exp(1i*phase_light_avg)));
     prefAngle_light = angle(mean(exp(1i*phase_light_avg)));
     
     % Plot light histogram
@@ -87,9 +87,9 @@ for i = 1:size(spikes_light,2)
     % Calculate dark angles, itpc, and pval
     phase_dark_avg = angle(mean(exp(1i*this_specgram_dark), 2));
     [pval_dark, ~] = circ_rtest(phase_dark_avg);
-    %itpc2 = abs(squeeze(mean(exp(1i*this_specgram_dark),1))); % circular mean across spikes
-    %itpc_dark = squeeze(mean(itpc2)); % mean across tapers
-    itpc_dark = abs(mean(exp(1i*phase_dark_avg)));
+    itpc2 = abs(squeeze(mean(exp(1i*this_specgram_dark),1))); % circular mean across spikes
+    itpc_dark = squeeze(mean(itpc2)); % mean across tapers
+    %itpc_dark = abs(mean(exp(1i*phase_dark_avg)));
     prefAngle_dark = angle(mean(exp(1i*phase_dark_avg)));
     
     % Plot dark histogram

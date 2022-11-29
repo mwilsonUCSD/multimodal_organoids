@@ -1,4 +1,4 @@
-function [phi_light, phi_dark, pval, is_significant] = f_plot_PLV_vs_freq(phase_specgram_light, phase_specgram_dark, spikes_light, spikes_dark, ind_light_all, ind_dark_all, t_amplifier, nBoots, nFreq, win, f, mapping, good_channels, params, nickname)
+function [plv_light_final, plv_dark_final, pval, is_significant] = f_plot_PLV_vs_freq(phase_specgram_light, phase_specgram_dark, spikes_light, spikes_dark, ind_light_all, ind_dark_all, t_amplifier, nBoots, nFreq, win, f, mapping, good_channels, params, nickname)
 % Function to calculate and plot the phase locking value versus frequency for all channels
 
 % Inputs:
