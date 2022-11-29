@@ -16,7 +16,27 @@ This code was written and tested using MATLAB v2019b. Two external toolboxes are
 To use the external toolboxes, download the toolbox and save it to the main folder then add the necessary functions to your MATLAB file path.
 
 ## Licence
-TBD
+MIT License
+
+Copyright (c) 2021 mwilsonUCSD
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
 
 ## Instructions
 As a first step, convert the raw electrophysiology data (recorded with an Intan RHD2000 recording amplifier) by running the function 'read_Intan_RHD2000_file.m' with the file name as the function input. After this step is complete, the data may be saved as a .mat file for quicker future reference.
